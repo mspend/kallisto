@@ -14,11 +14,10 @@ import pandas as pd
 
 counts = '/data/bulkRNA/IMG/kallisto/abundance.tsv'
 counts_df = pd.read_table(counts, delimiter='\t', header=0)
-# print(counts_df.head)
 
+# print(counts_df.head)
 # print(counts_df.index)
 # print(counts_df.columns)
-
 # print(counts_df['target_id'])
 
 
@@ -27,13 +26,35 @@ counts_df = pd.read_table(counts, delimiter='\t', header=0)
 # ENSMUST00000132100.2    ENSMUSG00000086053.2    Gm15178 Gm15178-201     1       75368775        75373007        -
 # ENSMUST00000185910.2    ENSMUSG00000100764.2    Gm29155 Gm29155-201     1       43782744        43783012        -
 transcripts_to_genes = '/data/bulkRNA/IMG/kallisto/pre_built_index_patcher_lab_t2g.txt'
-t2g_df = pd.read_table(transcripts_to_genes)
+t2g_df = pd.read_table(transcripts_to_genes, header=None,
+    names=[
+        "target_id",
+        "gene_id",
+        "gene_name",
+        "transcript_name",
+        "chr",
+        "start",
+        "end",
+        "strand",
+    ],)
 # print(t2g_df.head())
 
-num_lines = 0
+# Add a column to the counts_df on the far right containing the gene name from t2g_df
+counts_merged= counts_df.merge(
+    t2g_df[["target_id", "gene_name"]],
+    on="target_id",
+    how="left"
+)
 
-for transcript in counts_df['target_id']:
-    if transcript.startswith('ENSMUST'):
-        num_lines += 1
+print(counts_merged)
 
-print(num_lines)
+# Quality control: check what percentage of the transcripts are missing a gene name
+print(f'The percent of transcripts whose gene name is N/A is {counts_merged["gene_name"].isna().sum()/len(counts_df)*100}')
+
+# Create a Series containing only the gene name and the TPM
+gene_tpm = counts_merged.groupby("gene_name")["tpm"].sum().reset_index()
+print(gene_tpm)
+
+# Save as a CSV
+# Will save to the present working directory
+gene_tpm.to_csv('bulk_RNA_seq_counts_tpm.csv')

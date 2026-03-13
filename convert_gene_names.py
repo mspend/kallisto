@@ -29,6 +29,9 @@ print(f'The percent of transcripts whose gene name is N/A is {counts_merged["gen
 reordered = counts_merged[["gene_name", "target_id", "tpm", "est_counts", "length", "eff_length"]]
 
 # Create a Series containing only the gene name and the TPM
+# For some genes, thare are multiple target_ids meaning multiple transcripts that map to the same gene. 
+# These could be isoforms, splice variations, etc
+# I summed the counts for all transcripts mapping to the same gene. 
 summary = counts_merged.groupby("gene_name")["tpm"].sum().reset_index()
 
 # Save as a CSV
